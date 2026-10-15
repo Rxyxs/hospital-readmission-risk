@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hospital Readmission Risk</title>
+<meta name="description" content="A 30-day readmission model on 99k real hospital encounters, judged by leaks removed, calibration, net benefit and performance across patient groups.">
+<style>
+  :root {
+    --bg: #FBFAF8; --surface: #FFFFFF; --ink: #23201D; --muted: #6B645D;
+    --line: #E3DED7; --accent: #6B4FA0; --good: #4C7A3E;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151719; --surface: #1D2023; --ink: #E9EBED; --muted: #A2A8AE;
+      --line: #2E3236; --accent: #A58BD6; --good: #7FAE6B;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #151719; --surface: #1D2023; --ink: #E9EBED; --muted: #A2A8AE;
+    --line: #2E3236; --accent: #A58BD6; --good: #7FAE6B;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 0 16px 96px; }
+  header { padding: 72px 0 40px; border-bottom: 1px solid var(--line); margin-bottom: 44px; }
+  h1 { font-size: clamp(1.9rem, 5vw, 2.7rem); line-height: 1.15; margin: 0 0 18px; letter-spacing: -0.02em; }
+  .lede { font-size: clamp(1.02rem, 2.4vw, 1.17rem); color: var(--muted); margin: 0 0 24px; max-width: 64ch; }
+  .lede strong { color: var(--ink); }
+  .links a {
+    display: inline-block; margin: 0 10px 10px 0; padding: 9px 15px;
+    border: 1px solid var(--line); border-radius: 7px; text-decoration: none;
+    color: var(--ink); background: var(--surface); font-size: 0.9rem; transition: border-color .15s;
+  }
+  .links a:hover { border-color: var(--accent); }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 28px 0 0; }
+  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 9px; padding: 14px 16px; }
+  .stat b { display: block; font-size: 1.6rem; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .stat span { color: var(--muted); font-size: 0.85rem; }
+  h2 { font-size: 1.42rem; margin: 56px 0 8px; letter-spacing: -0.01em; padding-top: 10px; border-top: 1px solid var(--line); }
+  h2 .num { color: var(--accent); font-variant-numeric: tabular-nums; margin-right: 8px; }
+  p, li { max-width: 72ch; }
+  p { margin: 0 0 16px; }
+  figure { margin: 26px 0; }
+  figure img { width: 100%; height: auto; display: block; border: 1px solid var(--line); border-radius: 9px; background: #fff; }
+  figcaption { font-size: 0.85rem; color: var(--muted); margin-top: 9px; max-width: 72ch; }
+  .tablewrap { overflow-x: auto; margin: 22px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; min-width: 460px; }
+  th, td { padding: 9px 12px; text-align: right; border-bottom: 1px solid var(--line); }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: .04em; }
+  .win td { color: var(--good); font-weight: 600; }
+  code { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; font-size: 0.88em; }
+  footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.85rem; }
+  footer a { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>A readmission model a hospital could actually use</h1>
+  <p class="lede">99,340 real encounters of diabetic patients in 130 US hospitals, 11.4% readmitted within 30 days. Making the model look good is easy: one leaky feature lifts AUC to 0.80. Making it <strong>useful</strong> means honest validation, calibrated risks, a net benefit at realistic thresholds, and checking who it fails.</p>
+  <div class="links">
+    <a href="https://github.com/Rxyxs/hospital-readmission-risk">Code on GitHub</a>
+    <a href="https://www.kaggle.com/datasets/brandao/diabetes">Dataset on Kaggle</a>
+  </div>
+  <div class="stats">
+    <div class="stat"><b>0.671</b><span>honest AUC on held-out patients (0.805 with the leak)</span></div>
+    <div class="stat"><b>2.4x</b><span>readmission rate among patients flagged at 20% risk</span></div>
+    <div class="stat"><b>19% / 20%</b><span>readmissions flagged, African American / Caucasian</span></div>
+    <div class="stat"><b>3%</b><span>flagged when race is not recorded: a blind spot</span></div>
+  </div>
+</header>
+
+<h2><span class="num">01</span>The leak worth 0.12 AUC</h2>
+<figure>
+  <img src="img/leak.png" alt="Bar chart of 5-fold AUC: 0.805 with an all-time visit count, 0.685 with random rows and honest features, 0.684 split by patient, 0.664 for logistic regression.">
+  <figcaption>A 30-day readmission is itself another visit, so counting a patient&#39;s visits over the whole dataset encodes the answer. Counting only earlier visits is what a hospital knows at discharge. Splitting by patient instead of by row barely changes the score here.</figcaption>
+</figure>
+
+<h2><span class="num">02</span>Calibrated, and better than the simple policies</h2>
+<figure>
+  <img src="img/calibration.png" alt="Calibration plot of observed readmission against predicted risk by decile; points lie close to the diagonal.">
+  <figcaption>Predicted risk tracks observed readmission across deciles on held-out patients.</figcaption>
+</figure>
+<figure>
+  <img src="img/decision_curve.png" alt="Decision curve: the model net benefit stays above both following up everyone and no one from a 5% to a 39% risk threshold.">
+  <figcaption>Net benefit in readmissions caught per 100 patients, net of false alarms. At a 10% threshold the model gives 3.1 against 1.2 for following up everyone, and it stays positive up to 39%.</figcaption>
+</figure>
+
+<h2><span class="num">03</span>Who the model serves worse</h2>
+<figure>
+  <img src="img/groups.png" alt="Two panels by group: observed vs predicted readmission rates, which match closely for large groups, and the share of readmissions flagged, which is lowest for patients with missing race at about 3%.">
+  <figcaption>No gap between African American and Caucasian patients. Patients 70+ are separated less well (AUC 0.64 vs 0.72 under 50), and patients with no recorded race are both over-predicted and almost never flagged.</figcaption>
+</figure>
+
+<footer>
+  Pablo Reyes · Data: Diabetes 130-US hospitals 1999-2008, Strack et al. (2014), via Kaggle (CC0), not redistributed. Code under MIT.
+</footer>
+</div>
+</body>
+</html>
