@@ -1,4 +1,4 @@
-[English](README.md) | **Español**
+[[English](README.md) ] | [Español ]
 
 # Reingreso hospitalario a 30 días: un modelo de riesgo que un hospital podría usar
 
